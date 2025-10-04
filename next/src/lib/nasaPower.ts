@@ -1,15 +1,16 @@
-// Core NASA POWER utilities (fetching, transforming, CSV export)
+// nasa-power.ts - ONLY NASA API stuff
+
 export const START_YEAR = 2015;
 export const END_YEAR = 2024;
 
 export const POWER_PARAMS = [
-  "T2M", // Temperature at 2m (°C)
-  "T2M_MAX", // Max temperature (°C)
-  "T2M_MIN", // Min temperature (°C)
-  "PRECTOTCORR", // Precipitation (mm/day)
-  "WS2M", // Wind speed at 2m (m/s)
-  "RH2M", // Relative humidity (%)
-  "PS", // Surface pressure (kPa)
+  "T2M",
+  "T2M_MAX",
+  "T2M_MIN",
+  "PRECTOTCORR",
+  "WS2M",
+  "RH2M",
+  "PS",
 ] as const;
 
 export type PowerParam = (typeof POWER_PARAMS)[number];
@@ -90,4 +91,18 @@ export function validateLatLon(lat: number, lon: number) {
   if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
     throw new Error("Latitude must be [-90, 90] and longitude [-180, 180]");
   }
+}
+
+/**
+ * Filter rows to specific month/day across all years
+ */
+export function filterByMonthDay(
+  rows: PowerRow[],
+  month: number, // 1-12
+  day: number // 1-31
+): PowerRow[] {
+  return rows.filter((row) => {
+    const [, m, d] = row.date.split("-").map(Number);
+    return m === month && d === day;
+  });
 }
