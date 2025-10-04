@@ -11,6 +11,8 @@ interface Place {
 }
 
 export default function Home() {
+  const router = useRouter();
+
   const [query, setQuery] = useState('');
   const [places, setPlaces] = useState<Place[]>([]);
   const [dateStr, setDateStr] = useState('');
@@ -19,33 +21,29 @@ export default function Home() {
     if (query.length < 2) return;
 
     const timeout = setTimeout(async () => {
-      console.log(query);
       const q = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=3`;
+      // ^ query to fuzzy search Nominatim for address/place listed
       const res = await fetch(q);
-
       setPlaces(await res.json());
-      console.log(places)
     }, 300);
 
     return () => clearTimeout(timeout);
   }, [query])
 
-  const router = useRouter();
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (places.length == 0) return;
-    const [lat, lon] = [places[0].lat, places[0].lon];
-    const placeId = places[0].place_id;
-
     if (dateStr === '') return;
-    const data = [lat, lon, placeId, dateStr];
+    
+    const searched = places.filter(p => p.display_name === query);
+    if (searched.length == 0) return; // if our query matches a place returned by Nominatim
+    const place = searched[0];
 
-    const str = JSON.stringify(data);
-    const b64 = btoa(str);
+    const data = [place.lat, place.lon, place.place_id, dateStr];
+    const b64 = btoa(JSON.stringify(data));
 
     router.push(`/${encodeURIComponent(b64)}`)
-  } 
+  }
   
   return (
     <div>
@@ -62,20 +60,15 @@ export default function Home() {
         </label>
         <button type="submit">Will it rain on my parade?</button>
       </form>
-      { places.length > 0 && (
-        places.filter(place => place.display_name === query).length != 1 // 
-      ) && ( // ^ check if we picked one
-            <ul>
-              {places.map(place => (
-                <li
-                  key={place.place_id}
-                  onClick={() => setQuery(place.display_name)}
-                >
-                  {place.display_name}
-                </li>
-              ))}
-            </ul>
-          )}
+        {places.length > 0 && places.filter(place => place.display_name === query).length != 1 &&
+        // ^ matches at least one place, and we haven't already selected it
+        <ul>
+          {places.map(place => 
+            <li key={place.place_id}
+              onClick={() => setQuery(place.display_name)}
+            > {place.display_name} </li>
+        )}
+        </ul>}
     </div>
   );
 }
