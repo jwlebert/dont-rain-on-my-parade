@@ -1,11 +1,34 @@
 'use client';
 
-import React from "react";
+import { notFound } from "next/navigation";
+import React, { useEffect, useState } from "react";
+
+interface Position {
+  lat: number;
+  lon: number;
+}
 
 export default function Planning({ params }: { params: Promise<{ slug: string }> }) {
-  const {slug} = React.use(params);
-  const decoded = JSON.parse(atob(decodeURIComponent(slug)))
-  const [lat, lon, placeId, dateStr] = decoded;
+  const [pos, setPos] = useState<Position>();
+  const [placeId, setPlaceId] = useState(0);
+  const [dateStr, setDateStr] = useState('');
 
+  const {slug} = React.use(params);
+  useEffect(() => {
+    try {
+      const decoded = JSON.parse(atob(decodeURIComponent(slug)));
+      const [lat, lon, id, dateStr] = decoded;
+  
+      setPos({lat, lon});
+      setPlaceId(id);
+      setDateStr(dateStr);
+      
+      if (!Array.isArray(decoded)) throw Error("invalid slug");
+    } catch (e) {
+      console.error(e);
+      notFound();
+    }
+  }, [slug]);
+  
   return <div>My Post: {placeId}</div>
 }
